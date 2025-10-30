@@ -1,64 +1,71 @@
-"use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useGetProperties, type Property } from "@/hooks/property"
-import { Plus, Search, Building2, MapPin } from "lucide-react"
-import { toast } from "sonner"
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useGetProperties, type Property } from "@/hooks/property";
+import { Plus, Search, Building2, MapPin } from "lucide-react";
+import { toast } from "sonner";
 
 export default function PropertiesPage() {
-  const [getProperties, { isLoading, error }] = useGetProperties()
-  const [properties, setProperties] = useState<Property[]>([])
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("ALL")
-  const [typeFilter, setTypeFilter] = useState<string>("ALL")
-  const [hasLoaded, setHasLoaded] = useState(false)
+  const [getProperties, { isLoading }] = useGetProperties();
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [typeFilter, setTypeFilter] = useState<string>("ALL");
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const loadProperties = async () => {
     try {
-      const params: any = {}
-      if (statusFilter !== "ALL") params.status = statusFilter
-      if (typeFilter !== "ALL") params.type = typeFilter
-      if (search) params.search = search
+      const params: any = {};
+      if (statusFilter !== "ALL") params.status = statusFilter;
+      if (typeFilter !== "ALL") params.type = typeFilter;
+      if (search) params.search = search;
 
-      const result = await getProperties(params)
-      setProperties(result.properties)
-      setHasLoaded(true)
-    } catch (err) {
-      toast.error("Failed to load properties")
+      const result = await getProperties(params);
+      setProperties(result.properties);
+      setHasLoaded(true);
+    } catch {
+      toast.error("Failed to load properties");
     }
-  }
+  };
 
   // Load properties on mount
   if (!hasLoaded && !isLoading) {
-    loadProperties()
+    loadProperties();
   }
 
   const handleSearch = () => {
-    loadProperties()
-  }
+    loadProperties();
+  };
 
   const handleFilterChange = () => {
-    loadProperties()
-  }
+    loadProperties();
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "AVAILABLE":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "OCCUPIED":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       case "MAINTENANCE":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -97,8 +104,8 @@ export default function PropertiesPage() {
             <Select
               value={statusFilter}
               onValueChange={(value) => {
-                setStatusFilter(value)
-                setTimeout(handleFilterChange, 0)
+                setStatusFilter(value);
+                setTimeout(handleFilterChange, 0);
               }}
             >
               <SelectTrigger>
@@ -114,8 +121,8 @@ export default function PropertiesPage() {
             <Select
               value={typeFilter}
               onValueChange={(value) => {
-                setTypeFilter(value)
-                setTimeout(handleFilterChange, 0)
+                setTypeFilter(value);
+                setTimeout(handleFilterChange, 0);
               }}
             >
               <SelectTrigger>
@@ -158,7 +165,10 @@ export default function PropertiesPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {properties.map((property) => (
-            <Link key={property.id} href={`/landlord/properties/${property.id}`}>
+            <Link
+              key={property.id}
+              href={`/landlord/properties/${property.id}`}
+            >
               <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                 <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                   {property.images[0] ? (
@@ -203,5 +213,5 @@ export default function PropertiesPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

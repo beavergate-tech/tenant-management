@@ -73,7 +73,7 @@ export async function GET(
     }
 
     return NextResponse.json({ tenant })
-  } catch (error) {
+  } catch {
     console.error("Error fetching tenant:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -111,7 +111,7 @@ export async function PATCH(
     }
 
     // Update tenant profile and user name if provided
-    const updateData: any = {}
+    const updateData: Record<string, unknown> = {}
     if (validatedData.phoneNumber !== undefined)
       updateData.phoneNumber = validatedData.phoneNumber
     if (validatedData.dateOfBirth !== undefined)
@@ -138,7 +138,7 @@ export async function PATCH(
       message: "Tenant updated successfully",
       tenant,
     })
-  } catch (error) {
+  } catch {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.errors[0].message },
@@ -189,7 +189,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: "Tenant deleted successfully" })
-  } catch (error) {
+  } catch {
     console.error("Error deleting tenant:", error)
     return NextResponse.json(
       { error: "Internal server error" },

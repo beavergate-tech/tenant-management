@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useState } from "react"
@@ -29,7 +30,7 @@ export default function EditPropertyPage() {
       const result = await getProperty(propertyId)
       setProperty(result.property)
       setHasLoaded(true)
-    } catch (err) {
+    } catch {
       toast.error("Failed to load property")
       router.push("/landlord/properties")
     }
@@ -63,7 +64,7 @@ export default function EditPropertyPage() {
       })
       toast.success("Property updated successfully!")
       router.push(`/landlord/properties/${propertyId}`)
-    } catch (error) {
+    } catch {
       toast.error("Failed to update property")
     }
   }

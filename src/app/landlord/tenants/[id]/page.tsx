@@ -35,7 +35,7 @@ export default function TenantDetailPage() {
       const result = await getTenant(tenantId)
       setTenant(result.tenant)
       setHasLoaded(true)
-    } catch (err) {
+    } catch {
       toast.error("Failed to load tenant")
       router.push("/landlord/tenants")
     }
@@ -50,7 +50,7 @@ export default function TenantDetailPage() {
       await deleteTenant(tenantId)
       toast.success("Tenant deleted successfully")
       router.push("/landlord/tenants")
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete tenant. They may have active rentals.")
     }
   }

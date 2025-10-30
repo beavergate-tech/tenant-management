@@ -73,7 +73,7 @@ export async function GET(
     }
 
     return NextResponse.json({ property })
-  } catch (error) {
+  } catch {
     console.error("Error fetching property:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -136,7 +136,7 @@ export async function PATCH(
       message: "Property updated successfully",
       property,
     })
-  } catch (error) {
+  } catch {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.errors[0].message },
@@ -200,7 +200,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: "Property deleted successfully" })
-  } catch (error) {
+  } catch {
     console.error("Error deleting property:", error)
     return NextResponse.json(
       { error: "Internal server error" },

@@ -1,90 +1,95 @@
-import { auth } from "@/lib/auth"
-import prisma from "@/lib/prisma"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Building2, Users, DollarSign, FileCheck } from "lucide-react"
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building2, Users, DollarSign, FileCheck } from "lucide-react";
 
 export default async function LandlordDashboardPage() {
-  const session = await auth()
+  const session = await auth();
 
   if (!session?.user) {
-    return null
+    return null;
   }
 
   // Get landlord profile
   const landlordProfile = await prisma.landlordProfile.findUnique({
     where: { userId: session.user.id },
-  })
+  });
 
   if (!landlordProfile) {
-    return <div>Landlord profile not found</div>
+    return <div>Landlord profile not found</div>;
   }
 
   // Get statistics
-  const [totalProperties, occupiedProperties, totalTenants, pendingKYC, recentPayments] =
-    await Promise.all([
-      prisma.property.count({
-        where: { landlordId: landlordProfile.id },
-      }),
-      prisma.property.count({
-        where: { landlordId: landlordProfile.id, status: "OCCUPIED" },
-      }),
-      prisma.rental.count({
-        where: {
-          property: { landlordId: landlordProfile.id },
-          status: "ACTIVE",
-        },
-      }),
-      prisma.document.count({
-        where: {
-          status: "PENDING",
-          tenant: {
-            rentals: {
-              some: {
-                property: { landlordId: landlordProfile.id },
-              },
+  const [
+    totalProperties,
+    occupiedProperties,
+    totalTenants,
+    pendingKYC,
+    recentPayments,
+  ] = await Promise.all([
+    prisma.property.count({
+      where: { landlordId: landlordProfile.id },
+    }),
+    prisma.property.count({
+      where: { landlordId: landlordProfile.id, status: "OCCUPIED" },
+    }),
+    prisma.rental.count({
+      where: {
+        property: { landlordId: landlordProfile.id },
+        status: "ACTIVE",
+      },
+    }),
+    prisma.document.count({
+      where: {
+        status: "PENDING",
+        tenant: {
+          rentals: {
+            some: {
+              property: { landlordId: landlordProfile.id },
             },
           },
         },
-      }),
-      prisma.rentPayment.findMany({
-        where: {
-          rental: {
-            property: { landlordId: landlordProfile.id },
-          },
+      },
+    }),
+    prisma.rentPayment.findMany({
+      where: {
+        rental: {
+          property: { landlordId: landlordProfile.id },
         },
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        include: {
-          rental: {
-            include: {
-              tenant: {
-                include: {
-                  user: {
-                    select: {
-                      name: true,
-                    },
+      },
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      include: {
+        rental: {
+          include: {
+            tenant: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
                   },
                 },
               },
-              property: {
-                select: {
-                  name: true,
-                },
+            },
+            property: {
+              select: {
+                name: true,
               },
             },
           },
         },
-      }),
-    ])
+      },
+    }),
+  ]);
 
-  const availableProperties = totalProperties - occupiedProperties
+  const availableProperties = totalProperties - occupiedProperties;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-gray-600 mt-1">
-          Welcome back! Here's an overview of your properties and tenants.
+          Welcome back! Here&apos;s an overview of your properties and tenants.
         </p>
       </div>
 
@@ -92,7 +97,9 @@ export default async function LandlordDashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Properties
+            </CardTitle>
             <Building2 className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
@@ -105,7 +112,9 @@ export default async function LandlordDashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Tenants</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Tenants
+            </CardTitle>
             <Users className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
@@ -116,7 +125,9 @@ export default async function LandlordDashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Payments</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Recent Payments
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
@@ -153,13 +164,17 @@ export default async function LandlordDashboardPage() {
                   className="flex items-center justify-between border-b pb-3 last:border-0"
                 >
                   <div>
-                    <p className="font-medium">{payment.rental.tenant.user.name}</p>
+                    <p className="font-medium">
+                      {payment.rental.tenant.user.name}
+                    </p>
                     <p className="text-sm text-gray-600">
                       {payment.rental.property.name}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">${payment.amount.toFixed(2)}</p>
+                    <p className="font-semibold">
+                      ${payment.amount.toFixed(2)}
+                    </p>
                     <p className="text-sm text-gray-600">
                       {payment.status === "PAID" ? (
                         <span className="text-green-600">Paid</span>
@@ -177,5 +192,5 @@ export default async function LandlordDashboardPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

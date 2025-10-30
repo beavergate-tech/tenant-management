@@ -3,14 +3,12 @@ import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import { z } from "zod"
 
-const updateRentPaymentSchema = z.object({
-  status: z.enum(["PENDING", "PAID", "OVERDUE"]).optional(),
-  paidDate: z.string().optional(),
-  paymentMethod: z.string().optional(),
-  transactionId: z.string().optional(),
+const updateDocumentSchema = z.object({
+  status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
+  rejectionReason: z.string().optional(),
 })
 
-// GET /api/rents/[id] - Get single rent payment
+// GET /api/documents/[id] - Get single document
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -24,27 +22,24 @@ export async function GET(
 
     const { id } = await params
 
-    const rentPayment = await prisma.rentPayment.findUnique({
+    const document = await prisma.document.findUnique({
       where: { id },
       include: {
-        rental: {
+        tenant: {
           include: {
-            property: {
+            user: {
               select: {
-                id: true,
                 name: true,
-                address: true,
-                city: true,
-                state: true,
-                landlordId: true,
+                email: true,
               },
             },
-            tenant: {
+            rentals: {
               include: {
-                user: {
+                property: {
                   select: {
+                    id: true,
                     name: true,
-                    email: true,
+                    address: true,
                   },
                 },
               },
@@ -54,9 +49,9 @@ export async function GET(
       },
     })
 
-    if (!rentPayment) {
+    if (!document) {
       return NextResponse.json(
-        { error: "Rent payment not found" },
+        { error: "Document not found" },
         { status: 404 }
       )
     }
@@ -67,10 +62,16 @@ export async function GET(
         where: { userId: session.user.id },
       })
 
-      if (
-        !landlordProfile ||
-        rentPayment.rental.property.landlordId !== landlordProfile.id
-      ) {
+      if (!landlordProfile) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+
+      // Check if landlord owns property that tenant is renting
+      const hasAccess = document.tenant.rentals.some(
+        (rental) => rental.property.landlordId === landlordProfile.id
+      )
+
+      if (!hasAccess) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
       }
     } else if (session.user.role === "TENANT") {
@@ -78,14 +79,14 @@ export async function GET(
         where: { userId: session.user.id },
       })
 
-      if (!tenantProfile || rentPayment.rental.tenantId !== tenantProfile.id) {
+      if (!tenantProfile || document.tenantId !== tenantProfile.id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
       }
     }
 
-    return NextResponse.json({ rentPayment })
-  } catch (error) {
-    console.error("Error fetching rent payment:", error)
+    return NextResponse.json({ document })
+  } catch {
+    console.error("Error fetching document:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -93,7 +94,7 @@ export async function GET(
   }
 }
 
-// PATCH /api/rents/[id] - Update rent payment (mark as paid, etc.)
+// PATCH /api/documents/[id] - Update document verification status (Landlord only)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -107,59 +108,67 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const validatedData = updateRentPaymentSchema.parse(body)
+    const validatedData = updateDocumentSchema.parse(body)
 
-    // Check if rent payment exists
-    const existingPayment = await prisma.rentPayment.findUnique({
+    // Check if document exists
+    const existingDocument = await prisma.document.findUnique({
       where: { id },
       include: {
-        rental: {
+        tenant: {
           include: {
-            property: true,
+            rentals: {
+              include: {
+                property: true,
+              },
+            },
           },
         },
       },
     })
 
-    if (!existingPayment) {
+    if (!existingDocument) {
       return NextResponse.json(
-        { error: "Rent payment not found" },
+        { error: "Document not found" },
         { status: 404 }
       )
     }
 
-    // Verify landlord owns the property
+    // Verify landlord owns property that tenant is renting
     const landlordProfile = await prisma.landlordProfile.findUnique({
       where: { userId: session.user.id },
     })
 
-    if (
-      !landlordProfile ||
-      existingPayment.rental.property.landlordId !== landlordProfile.id
-    ) {
+    if (!landlordProfile) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Update payment
-    const updateData: Record<string, unknown> = {}
-    if (validatedData.status !== undefined) updateData.status = validatedData.status
-    if (validatedData.paidDate !== undefined)
-      updateData.paidDate = validatedData.paidDate ? new Date(validatedData.paidDate) : null
-    if (validatedData.paymentMethod !== undefined)
-      updateData.paymentMethod = validatedData.paymentMethod
-    if (validatedData.transactionId !== undefined)
-      updateData.transactionId = validatedData.transactionId
+    const hasAccess = existingDocument.tenant.rentals.some(
+      (rental) => rental.property.landlordId === landlordProfile.id
+    )
 
-    const rentPayment = await prisma.rentPayment.update({
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    // Update document
+    const updateData: Record<string, unknown> = {
+      status: validatedData.status,
+    }
+
+    if (validatedData.rejectionReason) {
+      updateData.rejectionReason = validatedData.rejectionReason
+    }
+
+    const document = await prisma.document.update({
       where: { id },
       data: updateData,
     })
 
     return NextResponse.json({
-      message: "Rent payment updated successfully",
-      rentPayment,
+      message: "Document verification status updated",
+      document,
     })
-  } catch (error) {
+  } catch {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.errors[0]?.message || "Validation error" },
@@ -167,7 +176,7 @@ export async function PATCH(
       )
     }
 
-    console.error("Error updating rent payment:", error)
+    console.error("Error updating document:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -37,7 +37,7 @@ export default function LoginPage() {
       toast.success("Logged in successfully")
       router.push("/landlord/dashboard")
       router.refresh()
-    } catch (error) {
+    } catch {
       toast.error("Something went wrong")
     } finally {
       setIsLoading(false)
@@ -47,7 +47,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       await signIn("google", { callbackUrl: "/landlord/dashboard" })
-    } catch (error) {
+    } catch {
       toast.error("Failed to sign in with Google")
     }
   }
@@ -133,7 +133,7 @@ export default function LoginPage() {
         </form>
         <CardFooter>
           <p className="text-sm text-gray-600 text-center w-full">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/register" className="text-blue-600 hover:underline">
               Sign up
             </Link>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
-// GET /api/rents - Get all rent payments (Landlord only)
+// GET /api/documents - Get all KYC documents (Landlord only)
 export async function GET(request: Request) {
   try {
     const session = await auth()
@@ -13,8 +13,8 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
-    const propertyId = searchParams.get("propertyId")
     const tenantId = searchParams.get("tenantId")
+    const type = searchParams.get("type")
 
     // Get landlord profile
     const landlordProfile = await prisma.landlordProfile.findUnique({
@@ -28,11 +28,15 @@ export async function GET(request: Request) {
       )
     }
 
-    // Build filter
+    // Build filter - get documents from tenants renting landlord's properties
     const where: Record<string, unknown> = {
-      rental: {
-        property: {
-          landlordId: landlordProfile.id,
+      tenant: {
+        rentals: {
+          some: {
+            property: {
+              landlordId: landlordProfile.id,
+            },
+          },
         },
       },
     }
@@ -41,38 +45,31 @@ export async function GET(request: Request) {
       where.status = status
     }
 
-    if (propertyId) {
-      where.rental = {
-        ...where.rental,
-        propertyId,
-      }
-    }
-
     if (tenantId) {
-      where.rental = {
-        ...where.rental,
-        tenantId,
-      }
+      where.tenantId = tenantId
     }
 
-    const rentPayments = await prisma.rentPayment.findMany({
+    if (type) {
+      where.type = type
+    }
+
+    const documents = await prisma.document.findMany({
       where,
       include: {
-        rental: {
+        tenant: {
           include: {
-            property: {
+            user: {
               select: {
-                id: true,
                 name: true,
-                address: true,
+                email: true,
               },
             },
-            tenant: {
+            rentals: {
               include: {
-                user: {
+                property: {
                   select: {
                     name: true,
-                    email: true,
+                    address: true,
                   },
                 },
               },
@@ -80,24 +77,20 @@ export async function GET(request: Request) {
           },
         },
       },
-      orderBy: { dueDate: "desc" },
+      orderBy: { createdAt: "desc" },
     })
 
     // Calculate summary stats
     const summary = {
-      totalDue: rentPayments
-        .filter((p) => p.status === "PENDING" || p.status === "OVERDUE")
-        .reduce((sum, p) => sum + Number(p.amount), 0),
-      totalPaid: rentPayments
-        .filter((p) => p.status === "PAID")
-        .reduce((sum, p) => sum + Number(p.amount), 0),
-      overdueCount: rentPayments.filter((p) => p.status === "OVERDUE").length,
-      pendingCount: rentPayments.filter((p) => p.status === "PENDING").length,
+      pendingCount: documents.filter((d) => d.status === "PENDING").length,
+      approvedCount: documents.filter((d) => d.status === "APPROVED").length,
+      rejectedCount: documents.filter((d) => d.status === "REJECTED").length,
+      totalCount: documents.length,
     }
 
-    return NextResponse.json({ rentPayments, summary })
+    return NextResponse.json({ documents, summary })
   } catch {
-    console.error("Error fetching rent payments:", error)
+    console.error("Error fetching documents:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

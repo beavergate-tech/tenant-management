@@ -35,7 +35,7 @@ export default function PropertyDetailPage() {
       const result = await getProperty(propertyId)
       setProperty(result.property)
       setHasLoaded(true)
-    } catch (err) {
+    } catch {
       toast.error("Failed to load property")
       router.push("/landlord/properties")
     }
@@ -50,7 +50,7 @@ export default function PropertyDetailPage() {
       await deleteProperty(propertyId)
       toast.success("Property deleted successfully")
       router.push("/landlord/properties")
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete property")
     }
   }

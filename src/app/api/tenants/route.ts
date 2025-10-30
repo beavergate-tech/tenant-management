@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     }
 
     // Build filter - get tenants who have rented from this landlord
-    const where: any = {
+    const where: Record<string, unknown> = {
       rentals: {
         some: {
           property: {
@@ -99,7 +99,7 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json({ tenants })
-  } catch (error) {
+  } catch {
     console.error("Error fetching tenants:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     )
-  } catch (error) {
+  } catch {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.errors[0].message },

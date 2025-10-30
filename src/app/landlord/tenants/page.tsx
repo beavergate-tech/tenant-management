@@ -1,15 +1,22 @@
-"use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useGetTenants, type Tenant } from "@/hooks/tenant"
-import { Plus, Search, Users, Mail, Phone } from "lucide-react"
-import { toast } from "sonner"
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useGetTenants, type Tenant } from "@/hooks/tenant";
+import { Plus, Search, Users, Mail, Phone } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -18,74 +25,74 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { useCreateTenant } from "@/hooks/tenant"
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useCreateTenant } from "@/hooks/tenant";
 
 export default function TenantsPage() {
-  const [getTenants, { isLoading }] = useGetTenants()
-  const [createTenant, { isLoading: isCreating }] = useCreateTenant()
-  const [tenants, setTenants] = useState<Tenant[]>([])
-  const [search, setSearch] = useState("")
-  const [kycFilter, setKycFilter] = useState<string>("ALL")
-  const [hasLoaded, setHasLoaded] = useState(false)
-  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [getTenants, { isLoading }] = useGetTenants();
+  const [createTenant, { isLoading: isCreating }] = useCreateTenant();
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [search, setSearch] = useState("");
+  const [kycFilter, setKycFilter] = useState<string>("ALL");
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phoneNumber: "",
     occupation: "",
-  })
+  });
 
   const loadTenants = async () => {
     try {
-      const params: any = {}
-      if (kycFilter !== "ALL") params.kycStatus = kycFilter
-      if (search) params.search = search
+      const params: any = {};
+      if (kycFilter !== "ALL") params.kycStatus = kycFilter;
+      if (search) params.search = search;
 
-      const result = await getTenants(params)
-      setTenants(result.tenants)
-      setHasLoaded(true)
-    } catch (err) {
-      toast.error("Failed to load tenants")
+      const result = await getTenants(params);
+      setTenants(result.tenants);
+      setHasLoaded(true);
+    } catch {
+      toast.error("Failed to load tenants");
     }
-  }
+  };
 
   if (!hasLoaded && !isLoading) {
-    loadTenants()
+    loadTenants();
   }
 
   const handleSearch = () => {
-    loadTenants()
-  }
+    loadTenants();
+  };
 
   const handleFilterChange = () => {
-    loadTenants()
-  }
+    loadTenants();
+  };
 
   const handleAddTenant = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     try {
-      await createTenant(formData)
-      toast.success("Tenant added successfully!")
-      setShowAddDialog(false)
-      setFormData({ name: "", email: "", phoneNumber: "", occupation: "" })
-      loadTenants()
-    } catch (error) {
-      toast.error("Failed to add tenant")
+      await createTenant(formData);
+      toast.success("Tenant added successfully!");
+      setShowAddDialog(false);
+      setFormData({ name: "", email: "", phoneNumber: "", occupation: "" });
+      loadTenants();
+    } catch {
+      toast.error("Failed to add tenant");
     }
-  }
+  };
 
   const getKYCBadge = (status: string) => {
     switch (status) {
       case "APPROVED":
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>
+        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
       case "REJECTED":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>
+        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       default:
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
+        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -106,7 +113,8 @@ export default function TenantsPage() {
               <DialogHeader>
                 <DialogTitle>Add New Tenant</DialogTitle>
                 <DialogDescription>
-                  Enter the tenant's details to create an account or invite them.
+                  Enter the tenant&apos;s details to create an account or invite
+                  them.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -115,7 +123,9 @@ export default function TenantsPage() {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -125,7 +135,9 @@ export default function TenantsPage() {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -134,7 +146,9 @@ export default function TenantsPage() {
                   <Input
                     id="phoneNumber"
                     value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phoneNumber: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -142,12 +156,18 @@ export default function TenantsPage() {
                   <Input
                     id="occupation"
                     value={formData.occupation}
-                    onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, occupation: e.target.value })
+                    }
                   />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowAddDialog(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isCreating}>
@@ -181,8 +201,8 @@ export default function TenantsPage() {
             <Select
               value={kycFilter}
               onValueChange={(value) => {
-                setKycFilter(value)
-                setTimeout(handleFilterChange, 0)
+                setKycFilter(value);
+                setTimeout(handleFilterChange, 0);
               }}
             >
               <SelectTrigger>
@@ -225,7 +245,9 @@ export default function TenantsPage() {
               <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg">{tenant.user.name}</CardTitle>
+                    <CardTitle className="text-lg">
+                      {tenant.user.name}
+                    </CardTitle>
                     {getKYCBadge(tenant.kycStatus)}
                   </div>
                 </CardHeader>
@@ -242,12 +264,14 @@ export default function TenantsPage() {
                   )}
                   {tenant.occupation && (
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Occupation:</span> {tenant.occupation}
+                      <span className="font-medium">Occupation:</span>{" "}
+                      {tenant.occupation}
                     </div>
                   )}
                   <div className="pt-2 border-t">
                     <p className="text-sm text-gray-600">
-                      {tenant.rentals.length} rental{tenant.rentals.length !== 1 ? "s" : ""}
+                      {tenant.rentals.length} rental
+                      {tenant.rentals.length !== 1 ? "s" : ""}
                     </p>
                   </div>
                 </CardContent>
@@ -257,5 +281,5 @@ export default function TenantsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

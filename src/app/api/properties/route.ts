@@ -11,11 +11,11 @@ const propertySchema = z.object({
   state: z.string().min(1, "State is required"),
   zipCode: z.string().min(1, "Zip code is required"),
   type: z.enum(["APARTMENT", "HOUSE", "CONDO", "STUDIO", "ROOM"]),
-  size: z.number().positive().optional(),
-  bedrooms: z.number().int().nonnegative().optional(),
-  bathrooms: z.number().int().nonnegative().optional(),
-  rentAmount: z.number().positive("Rent amount must be positive"),
-  deposit: z.number().nonnegative().optional(),
+  size: z.number().positive().optional().nullable(),
+  bedrooms: z.number().int().nonnegative().optional().nullable(),
+  bathrooms: z.number().int().nonnegative().optional().nullable(),
+  rentAmount: z.number().positive("Rent amount must be greater than 0"),
+  deposit: z.number().nonnegative().optional().nullable(),
   status: z.enum(["AVAILABLE", "OCCUPIED", "MAINTENANCE"]).optional(),
   images: z.array(z.string()).default([]),
   amenities: z.array(z.string()).default([]),
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       }
 
       // Build filter
-      const where: any = {
+      const where: Record<string, unknown> = {
         landlordId: landlordProfile.id,
       }
 
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
       })
     } else {
       // Tenant: only show available properties
-      const where: any = {
+      const where: Record<string, unknown> = {
         status: "AVAILABLE",
       }
 
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ properties })
-  } catch (error) {
+  } catch {
     console.error("Error fetching properties:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -110,6 +110,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+    console.log("Creating property with data:", JSON.stringify(body, null, 2))
     const validatedData = propertySchema.parse(body)
 
     // Get landlord profile
@@ -137,17 +138,19 @@ export async function POST(request: Request) {
       { message: "Property created successfully", property },
       { status: 201 }
     )
-  } catch (error) {
+  } catch {
     if (error instanceof z.ZodError) {
+      const firstError = error.issues?.[0]
       return NextResponse.json(
-        { error: error.errors[0]?.message || "Validation error" },
+        { error: firstError?.message || "Validation error", details: error.issues },
         { status: 400 }
       )
     }
 
     console.error("Error creating property:", error)
+    const errorMessage = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: errorMessage },
       { status: 500 }
     )
   }
