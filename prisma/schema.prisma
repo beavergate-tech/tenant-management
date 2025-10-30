@@ -1,0 +1,245 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth.js Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// User Models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(TENANT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  landlordProfile LandlordProfile?
+  tenantProfile   TenantProfile?
+}
+
+enum Role {
+  LANDLORD
+  TENANT
+}
+
+model LandlordProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber  String?
+  businessName String?
+
+  properties Property[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model TenantProfile {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber String?
+  dateOfBirth DateTime?
+  occupation  String?
+  kycStatus   KYCStatus @default(PENDING)
+
+  rentals   Rental[]
+  documents Document[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+enum KYCStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Property Management
+model Property {
+  id          String         @id @default(cuid())
+  name        String
+  description String?        @db.Text
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  type        PropertyType
+  size        Float?
+  bedrooms    Int?
+  bathrooms   Int?
+  rentAmount  Float
+  deposit     Float?
+  status      PropertyStatus @default(AVAILABLE)
+  images      String[]
+  amenities   String[]
+
+  landlordId String
+  landlord   LandlordProfile @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+
+  rentals    Rental[]
+  agreements RentAgreement[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  CONDO
+  STUDIO
+  ROOM
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+}
+
+// Rental Management
+model Rental {
+  id          String       @id @default(cuid())
+  propertyId  String
+  property    Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenantId    String
+  tenant      TenantProfile @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  startDate   DateTime
+  endDate     DateTime?
+  monthlyRent Float
+  deposit     Float
+  status      RentalStatus @default(ACTIVE)
+
+  rentPayments RentPayment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+enum RentalStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+model RentPayment {
+  id       String        @id @default(cuid())
+  rentalId String
+  rental   Rental        @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  amount   Float
+  dueDate  DateTime
+  paidDate DateTime?
+  status   PaymentStatus @default(PENDING)
+  lateFee  Float?
+  notes    String?       @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// Document Management
+model Document {
+  id              String         @id @default(cuid())
+  tenantId        String
+  tenant          TenantProfile  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type            DocumentType
+  fileName        String
+  fileUrl         String
+  fileSize        Int
+  status          DocumentStatus @default(PENDING)
+  rejectionReason String?        @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum DocumentType {
+  ID_PROOF
+  ADDRESS_PROOF
+  INCOME_PROOF
+  REFERENCE
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Rent Agreement Management
+model RentAgreement {
+  id           String          @id @default(cuid())
+  propertyId   String
+  property     Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  templateName String
+  content      String          @db.Text
+  variables    Json?
+  status       AgreementStatus @default(DRAFT)
+  startDate    DateTime?
+  endDate      DateTime?
+  version      Int             @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum AgreementStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
