@@ -40,6 +40,7 @@ export async function GET(
                     id: true,
                     name: true,
                     address: true,
+                    landlordId: true,
                   },
                 },
               },
@@ -85,7 +86,7 @@ export async function GET(
     }
 
     return NextResponse.json({ document })
-  } catch {
+  } catch (error) {
     console.error("Error fetching document:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -168,10 +169,10 @@ export async function PATCH(
       message: "Document verification status updated",
       document,
     })
-  } catch {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0]?.message || "Validation error" },
+        { error: error.issues[0]?.message || "Validation error" },
         { status: 400 }
       )
     }

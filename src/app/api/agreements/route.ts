@@ -10,7 +10,7 @@ const createAgreementSchema = z.object({
   rentAmount: z.number().positive(),
   securityDeposit: z.number().nonnegative(),
   terms: z.string(),
-  templateVariables: z.record(z.string()).optional(),
+  templateVariables: z.record(z.string(), z.string()).optional(),
 })
 
 // GET /api/agreements - Get all rent agreements
@@ -101,7 +101,7 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json({ agreements })
-  } catch {
+  } catch (error) {
     console.error("Error fetching agreements:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -145,7 +145,10 @@ export async function POST(request: Request) {
     // Create agreement
     const agreement = await prisma.rentAgreement.create({
       data: {
+        propertyId: rental.propertyId,
         rentalId: validatedData.rentalId,
+        templateName: "Standard Rental Agreement",
+        content: validatedData.terms || "",
         startDate: new Date(validatedData.startDate),
         endDate: new Date(validatedData.endDate),
         rentAmount: validatedData.rentAmount,
@@ -160,10 +163,10 @@ export async function POST(request: Request) {
       { message: "Agreement created successfully", agreement },
       { status: 201 }
     )
-  } catch {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0]?.message || "Validation error" },
+        { error: error.issues[0]?.message || "Validation error" },
         { status: 400 }
       )
     }

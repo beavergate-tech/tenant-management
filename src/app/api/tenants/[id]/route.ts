@@ -73,7 +73,7 @@ export async function GET(
     }
 
     return NextResponse.json({ tenant })
-  } catch {
+  } catch (error) {
     console.error("Error fetching tenant:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -138,10 +138,10 @@ export async function PATCH(
       message: "Tenant updated successfully",
       tenant,
     })
-  } catch {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       )
     }
@@ -189,7 +189,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: "Tenant deleted successfully" })
-  } catch {
+  } catch (error) {
     console.error("Error deleting tenant:", error)
     return NextResponse.json(
       { error: "Internal server error" },

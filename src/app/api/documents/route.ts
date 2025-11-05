@@ -89,7 +89,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ documents, summary })
-  } catch {
+  } catch (error) {
     console.error("Error fetching documents:", error)
     return NextResponse.json(
       { error: "Internal server error" },

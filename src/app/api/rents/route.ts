@@ -29,30 +29,26 @@ export async function GET(request: Request) {
     }
 
     // Build filter
-    const where: Record<string, unknown> = {
-      rental: {
-        property: {
-          landlordId: landlordProfile.id,
-        },
+    const rentalFilter: Record<string, unknown> = {
+      property: {
+        landlordId: landlordProfile.id,
       },
+    }
+
+    if (propertyId) {
+      rentalFilter.propertyId = propertyId
+    }
+
+    if (tenantId) {
+      rentalFilter.tenantId = tenantId
+    }
+
+    const where: Record<string, unknown> = {
+      rental: rentalFilter,
     }
 
     if (status) {
       where.status = status
-    }
-
-    if (propertyId) {
-      where.rental = {
-        ...where.rental,
-        propertyId,
-      }
-    }
-
-    if (tenantId) {
-      where.rental = {
-        ...where.rental,
-        tenantId,
-      }
     }
 
     const rentPayments = await prisma.rentPayment.findMany({
@@ -96,7 +92,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ rentPayments, summary })
-  } catch {
+  } catch (error) {
     console.error("Error fetching rent payments:", error)
     return NextResponse.json(
       { error: "Internal server error" },

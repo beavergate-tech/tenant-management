@@ -10,7 +10,7 @@ const updateAgreementSchema = z.object({
   securityDeposit: z.number().nonnegative().optional(),
   terms: z.string().optional(),
   status: z.enum(["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED"]).optional(),
-  templateVariables: z.record(z.string()).optional(),
+  templateVariables: z.record(z.string(), z.string()).optional(),
 })
 
 // GET /api/agreements/[id] - Get single agreement
@@ -41,12 +41,13 @@ export async function GET(
                 state: true,
                 zipCode: true,
                 landlord: {
-                  include: {
+                  select: {
+                    id: true,
+                    phoneNumber: true,
                     user: {
                       select: {
                         name: true,
                         email: true,
-                        phone: true,
                       },
                     },
                   },
@@ -54,12 +55,13 @@ export async function GET(
               },
             },
             tenant: {
-              include: {
+              select: {
+                id: true,
+                phoneNumber: true,
                 user: {
                   select: {
                     name: true,
                     email: true,
-                    phone: true,
                   },
                 },
               },
@@ -84,6 +86,7 @@ export async function GET(
 
       if (
         !landlordProfile ||
+        !agreement.rental ||
         agreement.rental.property.landlord.id !== landlordProfile.id
       ) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -93,13 +96,17 @@ export async function GET(
         where: { userId: session.user.id },
       })
 
-      if (!tenantProfile || agreement.rental.tenantId !== tenantProfile.id) {
+      if (
+        !tenantProfile ||
+        !agreement.rental ||
+        agreement.rental.tenantId !== tenantProfile.id
+      ) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
       }
     }
 
     return NextResponse.json({ agreement })
-  } catch {
+  } catch (error) {
     console.error("Error fetching agreement:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -150,6 +157,7 @@ export async function PATCH(
 
     if (
       !landlordProfile ||
+      !existingAgreement.rental ||
       existingAgreement.rental.property.landlordId !== landlordProfile.id
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -181,10 +189,10 @@ export async function PATCH(
       message: "Agreement updated successfully",
       agreement,
     })
-  } catch {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0]?.message || "Validation error" },
+        { error: error.issues[0]?.message || "Validation error" },
         { status: 400 }
       )
     }
@@ -237,6 +245,7 @@ export async function DELETE(
 
     if (
       !landlordProfile ||
+      !existingAgreement.rental ||
       existingAgreement.rental.property.landlordId !== landlordProfile.id
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -255,7 +264,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: "Agreement deleted successfully" })
-  } catch {
+  } catch (error) {
     console.error("Error deleting agreement:", error)
     return NextResponse.json(
       { error: "Internal server error" },

@@ -99,7 +99,7 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json({ tenants })
-  } catch {
+  } catch (error) {
     console.error("Error fetching tenants:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -166,7 +166,7 @@ export async function POST(request: Request) {
     const tempPassword = Math.random().toString(36).slice(-8)
     const hashedPassword = await bcrypt.hash(tempPassword, 10)
 
-    user = await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         email: validatedData.email,
         name: validatedData.name,
@@ -192,15 +192,15 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message: "Tenant created successfully",
-        tenant: user.tenantProfile,
+        tenant: newUser.tenantProfile,
         tempPassword, // Remove this in production, send via email only
       },
       { status: 201 }
     )
-  } catch {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       )
     }

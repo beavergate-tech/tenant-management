@@ -50,20 +50,22 @@ export async function GET(request: Request) {
     }
 
     if (minRent || maxRent) {
-      where.rent = {}
-      if (minRent) where.rent.gte = parseFloat(minRent)
-      if (maxRent) where.rent.lte = parseFloat(maxRent)
+      const rentFilter: { gte?: number; lte?: number } = {}
+      if (minRent) rentFilter.gte = parseFloat(minRent)
+      if (maxRent) rentFilter.lte = parseFloat(maxRent)
+      where.rentAmount = rentFilter
     }
 
     const properties = await prisma.property.findMany({
       where,
       include: {
         landlord: {
-          include: {
+          select: {
+            id: true,
+            phoneNumber: true,
             user: {
               select: {
                 name: true,
-                phone: true,
               },
             },
           },
@@ -73,7 +75,7 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json({ properties })
-  } catch {
+  } catch (error) {
     console.error("Error fetching available properties:", error)
     return NextResponse.json(
       { error: "Internal server error" },

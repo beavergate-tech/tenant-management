@@ -105,7 +105,7 @@ export async function GET() {
       recentRentals,
       recentPayments,
     })
-  } catch {
+  } catch (error) {
     console.error("Error fetching tenant dashboard:", error)
     return NextResponse.json(
       { error: "Internal server error" },

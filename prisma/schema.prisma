@@ -157,9 +157,10 @@ model Rental {
   deposit     Float
   status      RentalStatus @default(ACTIVE)
 
-  rentPayments RentPayment[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  rentPayments  RentPayment[]
+  rentAgreement RentAgreement[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 }
 
 enum RentalStatus {
@@ -222,16 +223,22 @@ enum DocumentStatus {
 
 // Rent Agreement Management
 model RentAgreement {
-  id           String          @id @default(cuid())
-  propertyId   String
-  property     Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  templateName String
-  content      String          @db.Text
-  variables    Json?
-  status       AgreementStatus @default(DRAFT)
-  startDate    DateTime?
-  endDate      DateTime?
-  version      Int             @default(1)
+  id                  String          @id @default(cuid())
+  propertyId          String
+  property            Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  rentalId            String?
+  rental              Rental?         @relation(fields: [rentalId], references: [id], onDelete: SetNull)
+  templateName        String
+  content             String          @db.Text
+  variables           Json?
+  templateVariables   Json?
+  rentAmount          Float?
+  securityDeposit     Float?
+  terms               String?         @db.Text
+  status              AgreementStatus @default(DRAFT)
+  startDate           DateTime?
+  endDate             DateTime?
+  version             Int             @default(1)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

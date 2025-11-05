@@ -91,7 +91,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ properties })
-  } catch {
+  } catch (error) {
     console.error("Error fetching properties:", error)
     return NextResponse.json(
       { error: "Internal server error" },
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
       { message: "Property created successfully", property },
       { status: 201 }
     )
-  } catch {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.issues?.[0]
       return NextResponse.json(
